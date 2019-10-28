@@ -1,0 +1,931 @@
+04/10/2019
+
+TIPOLOGIE DI ATTACCO
+
+-ip spoofing/maschereding:
+	
+	si fa finta di essere qualcun altro, falsificando l'ip address. (sbagliato proteggersi limitando l'accesso ad alcuni ip, si adottano altre tipologie di difesa)
+
+.packet sniffing:
+	
+	lettura dei pacchetti destinati ad un altro nodo della rete, puo avvenire tramite la porta di mirroring --> fondamentale proteggere l'apparato fisico, reti non broadcast, crittografare il payload
+
+-denial of service (DoS):
+	
+	impegnare l'host impedendogli di fornire il servizio
+		-saturazioen della posta/log
+		-ping flooding ->> (ping usa icmp(lvl 4) echo req ->, echo reply <- 8byte ognuno) si
+		 sfrutta il fatto che icmp è dentro un pacchetto ip la cui max_payload = 64kB quindi si manda dentro ping un payloaf di 64kB. Non ci si puo difendere ma si puo prevenire monitorando le risorse a rischio di saturazione
+
+-DDoS (Distribuited Denial of Service):
+
+	n nodi chiamati daemon/zombie innescano l'attacco. Si crea una botnet. Ci deve essere un master che controlli i vari nodi della botnet --> comunicazioni cifrate (canali coperti che si autoaggiornano per evitare che si venga sgamati (strano ricevere del traffico cifrato)) su c/s o p2p
+
+	miglioramenti: riflettori per nascondere le proprie tracce o per moltiplicare gli attacanti. Fattore di amplificazione |resp| >> |req| 
+
+-Shadow server:
+	
+	qualche nodo di rete si pone come se fosse lui il fornitore del servizio senza averne il diritto
+
+-MITM/connection hijaking/data spoofing:
+	
+	prende il controllo di un canale di comunicazione, intercettando il traffico.
+	mitm fisico --> ci si attacca al router
+	mitm logico --> modifiche tabelle di routing per dirottare un host verso l'attaccante
+
+	Contromisure: auth non basta dato che la peer auth viene fatta al apertura del canale ==> il controllo va fatto ad ogni singolo pacchetto che deve godere della proprieta della riservatezza, integrita, autenticazione e serializzazione (fare in modo che i pacchetti arrivino esattamente nel ordine desiderato (cd /tmp, rm -rf *))
+
+-MITB (man in the browser): https prottegge bene il canale quindi gli stronzi ti entrano 
+	nel terminale installando estensioni per fotterti tipo keylogger come parte di videogioco o estensione del browser
+
+
+07/10/2019
+
+Malware 
+
+	-virus: provoca danni dove è iniettato, e si propaga in altri sistemi
+	-worm: si autoreplica al inifinito saturando risore propagandosi in automatico
+
+	trojan --> vettore di di malware
+
+	rootkit --> insieme di strumenti per divantare root di un sistema per avere accesso privilegiato alle risorse
+
+
+	richede complicità (involontaria) della vittima -> alternative(posta elettronica)(ex: .vbs dentro .pdf corrotto)
+
+
+	-ransomware: malware orientato a chiedere un riscatto, sbloccati non sempre (dopo il pagamento di un riscatto).
+	-ransomware-as-a-service: tox malware(server su rete anonima TOR) 20% di commissione per gestire il tutto 
+
+Contromisure tecniche:
+
+	-dati cifrati? --> backup, di quanto tempo fa?(ransomware silente) --> bkp offline o in rete? sempre offline! --> bkp verificato o alla speruma bin?fare prove di disastro se funziona subito! --> è fondamentale saper datare il momento dell'attacco
+
+Problemi non tecnologici:
+
+	-awarness (kevin mitnick libro da leggere sugli hacker)
+	--> social engineering --> phishing
+
+come fare un virus:
+	-eseguibile statico senza dipendenze esterne 
+
+-cyber intrusion kill chain (slide 99 pkg 1) 
+	difesa: 
+
+CONCETTI BASE DI SICUREZZA
+	
+Crittografia -> trasformazioni mediante chiavi di plain text P
+
+principio di kerchoffs -> se le chaivi sono tenute segrete, gestite solo da sitemi fidati e di lunghezza adegutata ==> non ha alcuna importanza che gli algoritmi di crittografia siano tenuti segreti anzi è bene che siano resi pubblici
+
+Crittografia simmetrica / a chiave segreta -> k1 = k2 chiave unica e comune a mittente e ricevente, basso carico di elaborazione, ok per cifrare na grossa quantità di dati
+
+c = enc(k,p) c= cypher text, k = key, p = plain text
+
+P = dec(k,c) = enc^-1(k,c)
+
+problema: come condividere in modo sicuro la chiave segreta tra le due parti
+
+Ci sono svariati algoritmi simmetrici adatti ad ogni tipo di sistema di elaborazione (l'algoritmo migliore dal sistema dipende da --> performance cpu, contesto ...)
+
+DES è obsoleto, k a 56 bit e blocco di 64
+AES è il piu usato e piu recente 128-256 bit con blocco da 128
+
+FUNZIONE XOR
+se l'input è casuale allora anche l'output è casuale 50% di probabilita di beccare 0 o 1
+
+DES - Data Encryption Standard
+	chiave da 56 bit (+8 bit di parità) = 64
+	usa queste 3 operazioni perche pensato per essere efficiente in hardware:
+		
+		XOR 
+		shift
+		permutazioni -> non esistono operazioni sw che fanno sta roba
+
+3DES - Triple DES
+	modalità EDE (enc-dec-enc) -> applica DES 3 volte con 2 (Keq = 56bit) o 3 chiavi
+	(keq=112bit) ANSI x9.52 --> standard di sicurezza per le banche
+
+11/10/2018
+
+ATTACCO MEET IN THE MIDDLE -> per chiavi simmetriche
+
+	-esempio canale pes sniffare le mail del rettore --> mando una mail quindi conosco P  
+	 poi sniffo C e conduco l'attacco per scoprire la chiave --> mai usare algoritmi doppi tipo DES
+
+IDEA
+
+	-algoritmo con chiave a 128 bit e blocco da 64 solo per uso commerciale, noto perche usato in PGP(sw contro l'intrusione dei governi nelle comunicazioni), usa lo XOR addizione modulo 16, moltiplicazioni modulo 2^16 + 1. è adatto a un particolare tipo di cpu a 16 bit (spiare le comunicazioni via radio -> vedia ferrari e mclaren)
+
+RC2 - RC4
+
+	-sviluppati da ron rivest, 3/10 volte piu veloci di des, algoritmi segreti proprietari di rsa , (security through obsucrity, non farla mai) 
+
+	-rc2 pubblicato come rfc-2268 => è noto, usa chiave a lunghezza variabile da 8 a 1024 bit (di solito 64), usa blocchi da 64 bit
+
+	-rc4 è sconosciuto ma reverse engineered (dal codice macchina) ARCFOUR
+
+	-di tipo stream
+
+APPLICAZIONE DEGLI ALGORITMI A BLOCCHI
+
+	-vogliono cpu della dimensione del blocchi
+
+	MODALITÀ:
+
+	-Per dati in quantita superiore di un multiplo del blocco 
+		ECB
+		CBC
+
+	-Per dati in quantita superiore di un multiplo del blocco
+		padding
+		CFB,OFB
+		CTR
+
+	ECB (Electronic code block):
+
+		prendo esattamente un blocco della dim del blocco
+		fortemente sconsigliato, non lo si usa MAI
+		- P uguali corrispondo C uguali -> grossa lacuna di sicurezza
+		- cifra allo stesso modo blocchi identitici
+		  soffre del attacco known plaintext
+		- possibile effetuare lo swapping di blocchi
+
+		KNOWN PLAIN TEXT:
+			-ipotesi: conosco una parola del messaggio (scommetto che c'è quella determinata parola)
+
+			-cifro quella parola con tutte le possibili chiavi e salvo un db di 2^n entry  (chiave - cipher text) dove n sono i bit della chiave
+
+			-si inizia a sniffare il traffico di chipers text C finche non ne becca uno presente nel db -> la chiave di quello beccato sara la chiave di cifratura
+
+			-ci vuole tanto culo per beccare quella parola ==> si va a beccare l'header delle estensioni di quel file da sniffare che è uguale ovunque e sempre in tutto il mondo => il calcolo lo fai sui primi n bit del header di quel dato in quel dato -> la nuova assunzione è che si sappia l'estensione del file da sniffare
+
+	CBC - cipher block chaining
+
+		-prima di fare la cifratura pasticcia il plain text mettendolo in xor con il risultato del blocco precedente
+
+		-è necessario IV - vettore di inizializzazione per pasticciare il primo blocco di plain text
+
+		- per fare la decifratura il mittente deve conoscere sia IV che K, basta fare rifare lo xor per tornare indietro
+
+		-trasmettere IV della dimensione esatta di un blocco gia cifrato con K
+
+		-NONCE number = number used once -> IV non deve essere mai ripetuto e RANDOM
+
+		- si puo sgamare ma richiede un botto di tempo ==> dipende per quanto deve resistere agli attacchi la roba che sin vuole cifrare (rimanere segreta)
+
+		-non puo essere parallelizzato in cifratua, mentre in decifratura si puo -> è piu veloce a decifrare
+
+	PADDING (allineamento)
+
+		-ma se l'ultimo blocco non riempe un blocco intero? si fa padding nel zona di bit rimasta scoperta -> trasmetto piu dati del necessario, c'è un overload 
+
+		METODI DI PADDING:
+			il padding deve essere distinguibile dai dati
+
+			-se la lunghezza è nota o ricavabile tipo stringa C -> '/n' aggiungere byte nulli 0x000 0x000 0x000
+			-des originale un bit a 1 gli altri a 0
+			-ultimo byte pari alla lunghezza del padding
+			-un byte con valore 128 e gli altri nulli
+
+			MA COSA SI METTE NEI BYTE NULLI?
+				
+				padding con lunghezza esplicita:
+
+					-SCHNEIER byte nulli
+					-SSH2 byte random
+					-PKCS, SSL/TLS byte con vlaore L
+					-IPSEC/ESP numero progressivo 1...L
+					-byte con valore L-1
+
+				anche se il P è esattamente mmultiplo del blocco si deve comunque aggiungere un bloco di padding altrimenti il ricevente non sa interpretare le cose
+
+	CTS - Ciphertext stealing 
+		
+		per usare algoritmi a blocchi senza fare padding -> risparmiare sul disco
+
+		-usa il ciphertext dei blocchi precedenti come padding per non aumentare le dimensioni dei dati dopo la cifratura sulle memorie di massa
+
+		esempio con CTS + ECB:
+
+			-divido il penultimo blocco in head e tail, e aggiungo la tail dove manca per coompletare l'ultimo blocco , questo diventa l'ultimo e l'altro che ora è completo va come penultimo
+
+		CTS + CBC
+
+			guarda slide
+
+		CTR (counter mode)
+
+			-random access al cipher text, posso decifrare un blocco a caso del cipher text
+			-cifra n-bit alla volta (un gruppo, spesso di un byte)
+			-usa un nonce e un counter cifrati e messi in xor col plain text
+
+
+
+ALGORITMI SIMMETRICI DI TIPO STREAM
+
+	-algortimo ideale: ONE-TIME-PAD chiavi usa e getta, richiede chiave lunga quanto il 
+				   messaggio da cifrare, nei casi reali non ha senso
+
+	- si manda al mittente un seed che usa per generare una chiave pseudo casuale sincronizzata con il ricevente
+	-è fondamentale che i bit non vengano scambiati
+	-sono velocissimi
+	-non trovano campo applicativo dato che sul web si viaggia a pacchetti => blocchi
+	-servono soprattutto a cifrare dischi o memorie di massa
+
+
+14/10/2018
+
+
+	SALSA20-CHACHA20
+		-prof. bernstein, chiavi da 128 o 256 bit, usano le operazioni base ARX (add - rotate - xor), chahca20 è meglio di salsa perche piu veloce e piu sicuro.
+		- f(key256,Noncce64,counter64)= 512-bit keystream block, si puo decifrare in O(1) qualunque blocco a caso
+
+		-limite dello stream 256 GB 2^32 blocchi da 64B
+
+	CAMELLIA
+		-fatto in giappone, 
+		-blocco da 128bit e chiavi da 128/192/256 bit, prestazioni e robustezza di AES
+		-da usare in CTR e CTr/CBC-MAC mode
+
+	SEED
+		- fa cacaare perche usa active-x
+	ARIA
+		- simile ad aes, a blocchi da 128, koreano
+	GOST
+		- russo, blocco da 64 e chiave da 256
+
+	KUZNYECHIK 
+		-attualmente adottato da russi, impegato da veraCrypt(sw per cifrare i dischi)
+
+
+	SUNTO SULLA CRITTOGRAFIA SIMMETRICA:
+
+	chiave singola, condivisa tra coppie o gruppi
+
+		Distribuzioni delle chiavi: 
+
+			-per n persone che vogliono comunicare servono n(n-1)/2 chiavi
+
+			-OOB: Out-Of-Band canale non elettronico, non si trasmette mai la chiave insieme al testo cifrato! (le volte che capita potrebbe essere un attacco, dato che l'antivirus non riesce a leggere il virus cifrato)
+
+		Lunghezza delle chiavi segrete:
+
+			-se l'algoritmo è stato ben progettato e le chiavi sono tenute segrete allora l'unico attacco possibile è il brute force T = 2^nbit tentativi dove nbit è la lunghezza della chiave (principo di kerchof)
+
+			-chiavi di almeno 128 bit, si puoi di meno ma dipende per quanto tempo la roba cifrata deve rimanere segreta.
+
+			SFIDE DES - Ron Rivest:
+				2^56 = 72.057.594 miliardi chiavi -> 10k $ per chi riesce a trovarla
+
+				des challenge 2 -> in 60 giorni si decifrare
+
+				la fine del des -> deep crack in due giorni decifra il des (des challenge 3), è fondamentale conoscere il plain text da decifrare
+				il DES è muerto nel '99, chiave troppo corta. IETF cambia l' RFC e suggerisce l'uso di 3DES, inizia una gara del governo USA per un nuovo algortimo simmetrico -> AES (Advanced Encryption Standard), 15 candidati 5 finalisti, vince RIJNDAEL nb (iniziato ad essere usato su larga scala solo di recente -> gli algortimi sono come il vino, piu sono invecchiati piu son forti) -> la NASCITA DI AES
+
+
+	CRITTOGRAFIA A CHIAVE PUBBLICA
+
+	-Chiave privata e chiave pubblica, sono algoritmi lenti usato principalmente per la firma elettronica e per supportare gli algoritmi asimmetrici
+
+		CRITTOGRAFIA ASIMMETRICA
+
+			-Chiavi generate a coppie: (chiave privata) Kpri, (chiave pubblica) Kpub, i dati cifrati con una chiave sono decifrabili con l'altra
+
+			Firma Digitale:
+				chiunque puo leggere con la kpub cio che viene cifrato con la kpri di chi l'ha generato -> cio non garantisce sicurezza ma fornisce autenticità e integrita dei dati, dimostra in maniera matematica e inequivocabile che quel messagio è stato generato veramente dal mittente
+
+				- Riservatezza senza segreti condivisi:
+					si puo mandare un messaggio segreto cifrando con la kpub del destinatario
+
+			Algoritmi a chiave pubblica:
+
+				- RSA, prodotto di numeri primi, fattorizzazione del risultato,
+					breveattato solo in USA
+
+				- DSA , solo per firma digitale gli USA usano dsa che garantisce solo autenticita -> c'è una funzione con perdita dentro dsa (lossy) che impedisce la riservatezza
+
+
+			RSA
+
+				- trovare due numeri primi, grandi e segreti P e Q dove N = P x Q,
+				modulo N
+				- si calcola PHI = (p-1)(q-1)
+				-esponente pubblico E tale che 1<E<PHI ed E relativamente primo rispetto a PHI
+				- esponente privato D = E^-1 mod PHI
+
+				- chiave pubblica = (N,E)
+				- chiave privata = (N,D)
+				- P e Q sono da eliminare altrimenti sei fottuto
+
+				Rsa puo cifrare solo dati per cui il valore numerico è minore di modulo N
+
+				plaintext < N
+				cifratura c = p^E mod N
+				decifratura p = x^D mod N
+				-ruolo di E e D interscambiabile dato che (x^D)^E mod N = (x^E)^D mod N
+				-la complessita delle operazioni dipende dal numero di bit con valore 1 negli esponenti E e D
+
+				(nb x = a mod n  -> il modulo è il resto della divisione intera tra a e n)
+
+				-Aritmetica modulare 
+
+				nel aritmetica normale x = 5 implica x^-1 = 1/5
+				nella modulare x = 5 implica x^-1 mod 4 = {5,9,13,...}
+
+				(usare libreria BC su linux) 
+
+				RSA ottimizazioni di calcolo:
+				di solito le kpub hanno E = 13,17 o 65537
+				le operazioni lente sono quelle fatte con la kpri, grazie al CRT (Chines remainder theorem) permette di velocizzare (4x) le operazioni
+
+				Debolezze di rsa: 
+
+					-mai scegliere esponenti piccoli della kpub con E = 3 se viene invitato a diversi destinatari lo stesso messaggio cifrato allora si puo sgamaere
+
+					- uso della stesa chiave per firma e cifratura
+						-> se si firma una roba decifrata con la kpub si decifra il messsagio ( tipo di attacco se viene sniffato il messaggio cifrato)
+
+				Soluzioni alle debolezze:
+
+					......
+
+
+				Lunghezza delle chiavi pubbliche:
+
+					-512 alcune settimane
+					-1024 alcunni mesi
+					-2048 sicurezza ragionevole
+
+
+				DISTRIBUZIONE DELLE CHIAVI PER CRITTOGRAFIA ASIMMETRICA
+
+				-la kpub necessita di autenticità per garantirne la corrispondenza con la kpri -> chi garantisce la corrispendza tra kpub e identità della persona?
+
+					-soluzione1: scambio OOB (es: key party) controllare bene l'identità del possessore
+					-soluzione2: distribuzione della kpub all'interno di un certificato
+					             a kpub(=certificato d'identità digitale) -> autorità che certifica l'identità
+
+
+				SCAMBIO CHIAVE SEGRETA MEDIANTE ALGORITMI ASIMMETRICI
+
+				-si cifra la chiave simmetrica da condividere, con la kpub del destinatario. Implementa un key-distribution/key-exchange
+
+				- DIFFIE-HELLMAN : A e B scelgono due inter pubblici p e g tali che p>g>1
+						A si inventa un numero x e B y (slide 75), tecnica immune allo sniffing, implemena un key-agreement. Purtroppo non è resistente al mitm -> l'attaccante puo manipolare i dati -> richiede pre autenticazione per proteggersi per avere certezza che quel numero arriva esattemente da quel peer (DH)
+
+				CRITTOGRAFIA A CURVE ELLITTICHE - ECC
+
+					per far fronte alla potenza di calcolo dei computer quantistici, invede del aritmetica modulare si lavora sulla superficie di una curva ellittica 2D -> problema del logaritmo discreto => possibile usare chiavi piu corte 
+
+					-Vecchi algoritmi portabili in ECC:
+
+						ECDSA = firma digitale -> ps3 hacking
+						ECDH = key agreement (diffie hellman a curve ellittiche)
+						ECIES = key distribution, gener una chiave simmetrica 
+
+			-----------FINE PARTE RISERVATEZZA--------------
+
+
+17/10/2019
+
+INTEGRITA DEI MESSAGGI e AUTENTICITA ( + IMPO DI RISERVATEZZA )
+
+	certezza che il messaggio sia veramente quello che è stato spedito, e il mittente è davvero chi dichiara di esserem (autenticità), serve un meccanismo per cui il destinatario riesce a capire se il messsaggio è stato manipolato.
+
+	-Digest 
+
+		(non si puo fare un controllo a campione per verificare lintegrita del msg(divina commedia)) => Si calcola il digest, una sorta di riassunto del messaggio.
+
+		E' un riassunto a lunghezza FISSA, deve essere veloce da calcolare (per non perdere troppo tempo), non deve generare collisioni (due testi diversi danno lo stesso digest), impossibile da invertire. Spesso usatto con la crittografia a chiave pubblica, fa largo uso della funzione di HASH
+
+		vedi CRC - ethernet - disco fisso -> questi vanno bene in caso di errori casuali (non in caso di attacco al integrita)
+
+		-Funzioni di hash dedicate:
+
+			divido il msg M in N blocchi M1.....Mn, applico ripetutamente una funzione base (f), ci vuole un Init Vector => è un algoritmo a blocchi
+
+			MD2-MD4-MD5 (MERDA) 
+			SHA1: è stato il piu usato poi l'hanno bucato blocco da 512 digest da 160
+			FAMIGLIA SHA2:
+				sono stati fatti quando hanno attaccato SHA1
+				SHA-224
+				SHA-256
+				SHA-384
+				SHA-512 
+			SHA-3 (il migliore) -> blocco da 1152-576, digest da 224-512 
+
+		-Lunghezza del digest
+			documenti diversi potrebbero generare lo stesso digest (aliasing = collisioni)
+
+			md1 = H(m1)
+			md2 = H(m2)
+			se m1 != m2 si vorrebbe md1 != md2 sempre,  ma non è cosi
+
+			se l'algortimo è ben ideato => la probabilità di aliasing è -> Pa = 1/2^Nbit
+			formula calcolata assumendo ipotesi di rumore bianco (ogni bit ha la stessa probabilita di essere colpito), nella realtà questa ipotesi non vale dato che l'attaccante non mira a caso ai bit 
+
+			=> I classici CRC sono facilmente attaccabili con brute force basta fare 2^nbit tentativi
+				=> NO digest corti oggi si consiglian digest da almeno 256bit
+
+			SHA-1 broken:
+			dei cinesi nel 2005 hanno trovato una collisione con 2^69 operazioni (meno della metà della lunghezza del digest (160bit))
+			
+			SHA2-family:
+				SHA256 usa una word da 32 bit
+				SHA 512 Usa una word da 64bit 
+						da scegliere in base all architettura della cpu del PC
+
+			SHA = Standard Hash Algorithm
+
+			SHA-3 usa principi matematici completamente diversi da sha-2 e sha-3
+
+			Il paradosso del compleanno -> Attacco del compleanno
+
+				si basa su un mitm, appena l'attaccanete vede due pacchetti con lo stesso digest scambia due pacchetti => un algortimo di digest a n bit è insicuro quando vengono generati piu di 2^(n/2) digest perche si ha Pa~50% 
+
+				=> la resistenza di un digest 
+
+				Cripto sistema equilibrato quando algoritmo di cifratura simmetrico e digest hanno la stessa resistenza => sha-256 sta bene con aes-128, sha-512 con aes-256
+
+
+			SHA-3 - dopo una competizione vince Keccak (catch-ack) ha vinto grazie alla semplicita di implementarlo in hardware
+
+			KDF (Key Derivation Function)
+				una chiave crittografica deve sessere random( ogni bit deve avere il 50 % di probabilita di essere 0 o 1), ma gli utenti spesso usano password prevedibili => 
+				K=KDF(P,S,itc)
+				 P = password
+				 S = sale
+				 itc = numero di iterazioni della funione base
+
+				KDF si basano su funzini di hash crittografico :
+
+					PBKDF2 usa SHA1
+						DK = PBKDF"(PRF,PWD,C,sale,DkLen,Dk)
+						(WPA2) usa PBKdf2(HMAC-SHA1,pwd,ssid,4096,256)
+					HKDF basata su HMAC
+
+	21/10/2019
+
+		Possibili attacchi a pbkdf2 -> Password Hashing competition	
+
+	    Mic,Mac,Mid per garantire l'integrità, l'auntenticita e per evitare attachi replay dei messaggi si aggiunge agli stessi questi codici
+
+	    -Autenticazione tramite cifratura simmetrica
+
+		    Creazione di un MAC (SI STA PARLANDO DI PROTEZIONE DA INTEGRITA e AUTENTICITA DEL MESSAGGIO)
+		    		-mittente -> M* = enc(K,M)
+		    		-trasmissione -> M||M*
+		    		-ricevente -> X = dec(K,M*)
+		    		-verifica -> if (X==M) => ok else alarm	
+
+		    		Solo chi conosce K puo conftrontare la copia con l'originale
+		    			-Vantaggi -> verifica dell'integrita esatta e non approsimata
+
+		    			-Svanataggi -> usa operazioni molto pesanti (cifratura simmetrica), raddoppiano i dati trasmessi, il tempo sara piu che raddoppiato
+
+	    -Autenticazione tramite digest e cifratura simmetrica
+
+		    Si invia anche un digest cifrato col messaggio:
+
+		    	-mittente H = enc(K,hash(M))
+		    	-trasmissione -> M||H
+		    	-ricevente X -> dec(k,h)
+		    	-verifica if (X == hash(m)) then ok else alarm
+
+		    	Solo chi conosce la chiave pouo confrontare il digest trasmesso con quello clcolato suidati ricevuti
+
+		    		svantaggi -> due operazioni
+		    		vantaggi pochi dati aggiuntivi
+
+		    		Sistema soggetto alle collisioni :(
+
+
+	   -Autenticazione tramite keyed-digest (la soluzione migliore insieme alla prossima)
+
+	   Ora si usa sempre queste tecnica nella realta, calcolo l'hash tramite un digest con chiave (potrebbe essere nienta altro che )
+
+		   		-mittente d = digest(k,m)
+		   		-trasmissione M||D
+		   		-ricevente d' = digest(k,m)
+		   		-verifica if (d == d') then ok else alarm
+
+		   	solo chi conosce K puio calcolare il digest sui dati riceviti
+
+		   	vantaggi
+				-una sola operazione (digest)
+				-pochi dati aggiuntivi
+			(E' il migliore metodo per integrita su connessioni ultra veloci)
+
+			Possibili errori:
+				se kd = H(K||M) allora si puo cambiare il messaggio postponendo uno o piu blocchi:
+
+					kd' = H(K||M||M') = f(kd,M')
+
+				se Kd = H(M'|| M || K)
+
+
+				difese -> inserire tra i dati la lunghezza di M, definire Kd = H(K||M||K), usare un keyed-digest standard cioè HMAC
+
+
+	HMAC -> non è un algoritmo di HASH! è un modo di usare le funzioni di hash per combinarle con altre chiavi
+
+		quando lo si usa la chiave deve essere almeno grande quanto la dimensione del messaggio
+		E' la cosa piu usata ad oggi per calcolare un keyed digest -> guarda slide 110 per dettagli
+
+	CBC-MAC 
+
+		usato dalle banche, sfrutta un algoritmo di cifratutra simmetrica a blocchi in modalità cbc con IV nullo, prendendo come MAC la cifratura dell'ultimo blocco,è sicuro solo se i messaggi hanno lunghezza fissa
+
+	Integrità e Riservatezza come combinarle?
+
+
+		Authenticate-and-encrypt (A&E)
+
+			invio enc(k1,p) || mac(k2,p) -> attenzione possibile attacco DoS (dato che si deve sempre decifrare prima di verificare)
+			puo fornire info indirette sul plaintext
+			(SSH usa esattamente questo schema) 
+
+			-> Isnsicura a meno che sia fatta in un passo solo
+
+		Authenticate-then-encrypt (AtE)
+
+			enc (k1,p || mac(k2,p))
+
+				non da piu info indirette rispetto a prima
+				si deve sempre decifrare prima di verificare l'integrita
+				usato da SSL e TLS
+
+			->sicura solo con CBC
+
+		Encrypt-Then-Authenticate (EtA)
+
+			enc (k1,p) || mac(k2,enc(k1,p))
+			si puo evitare di decifrare se il MAC è errato
+			usato da IPsec
+
+			-> la combinazione piu sicura ma bisogna fre attenzzione agli errori di implementazione
+				includere sempre nel MAC l'IV e gli algoritmi
+
+
+		Authenticated Encryption (nuovo challenge per fare algortitmi migliori) - AE
+
+			-Unica operazione per riservatezza + autenticazione(ed integrità)
+			-I normali schemi di cifratura se on-line sono soggetti ad attacchi chosen-ciphertext
+
+			RFC 5116 definisce l'interfaccia per AE 
+
+			IGE - INfinite Garble EXtension , algoritmo usato per implentazione di AE, simile a un CBC doppio
+
+			GCM -> il piu popolare, single pass AEAD, parallelizzabile, usato da TLS e openSSL, non è soggetto a DoS, veloce su architetture intel
+
+			OCB 2.0 -> il piu veloce ma poco usato perhce brevettato con GPL, ora libero per usi non militari
+
+			CCM -> off-line double pass 
+
+			NB esempio dell-polito , con chiavi simmetriche non si possono distinguere le due parti chi mi garantisce che il messaggio nn se l'è inviato il receieer a se stesso
+
+
+		Autenticazione tramite digest e cifratura asimmetrica -> garantisce realmente l'autenticità del sender!
+
+			->FIRMA DIGITALE -> si cifra un hash dei dati con la chiave privata del sender -> utilizzata largamente in tutti i procedimenti commerciali -> la verifica avviene con la chiave pubblica del sender usata nel momento della cifratura (puo essere diverse da quella attuale nel momento della verifica)
+
+
+			Firme RSA e funzioni di HASH
+
+				una funzione di hash da usarsi in uno schema di firma RSA deve essere:
+					- resistente alle collisioni
+					- difficile da invertire -> per evitare una falsa firma della chiave pubblica (E,N)
+
+				standard per combinare le cose insieme:
+
+					PKCS1 (public key certificate standard, creati da RSA per creare i suoi algoritmi)
+
+
+				NB si ha una chiave privata con cui si producono infinite firme digitali( una per ogni documento firmato) => la firma è associato direttamente al documento da firmare
+
+			PROBLEMA: come conoscere la chiave del firmatario nel momento in cui ha firmato un documento?
+
+			=>CERTIFICATO A CHIAVE PUBBLICA:
+
+				Una struttura dati per legare in modo sicuro una chiave pubblica ad alcuni atttributi.
+				Lega chiave a identità! Firmato in modo elettronico dal emettitore (CA) certification authority, con scadenza temporale, revocabile sia dall'utente che dall' emettitore
+
+				Formati per certifacti a chiave pubblica:
+
+				X.509:
+					v1,v2 (ISO)
+					v3 (ISO + IETF)
+				non x.509
+					PGP(per gli anarchichici che ripudiano gli enti certificatori)
+					SPKI
+				PKCS#6
+					RSA, in parte compatibile con x.509
+					obsoleto
+
+			Struttura di un certificato x.509
+
+				-versione
+				-serial number
+				-signature algorithm del autorità di certificazione
+				-issure ente certificatore es: C = it O = polito OU=CA
+				-validity
+				-subject (chi è il sogetto che controlla la validità)
+				-subjectpublickeyinfo
+				-CA digital signature (digest del certificato cifrato con la public key)
+
+			Autorita di certificazione - PKI (public key infrastructure)
+
+				è un infrastruttura tecnica ed organizzativa che deve badare ad aspetti tecnici della verifica della chiave -> crea, distribuisce, e revoca certificati a chiave pubblica
+
+				Revoca dei certificati:
+					su richiesta del titolare (subject) ->(ad es se viene rubata o si perde la chiave privata)
+					autonomamente dal emettitore (issuer) ->(ad es qualcuno si sostiusce alla reale possessore della chiave pubblica -> social engineering attack)
+
+					NB la verifica è a carico del ricevente cioè del (relyng party, RP)
+
+				Meccanismi di revoca:
+					CRL (certificate revocation list)
+						elenco dei certificati revocati
+						firmato dalla CA o da un delegato(per evitare che qualcuno lo modifichi)
+						NB l'azione di revoca deve essere fatta istantanemante -> spesso è fatta da terzi
+
+					OCSP (Online certificate status protocol)
+						risposta puntuale di un singolo certificato
+						firmata dal server
+						NB è in grado di rispondere alla domanda solo se il certificato è buono solo nell'istante della richiesta ( nel caso di verifiche di firme passate non piu valide non va bene)
+
+				Verifica di una firma / certificato:
+
+					occorre una gerarchia per verificare chi certifica chi 
+
+					TLCA - top level CA - (trusted)Root CA - è l'unica che si autocertifica => serve un atto di fede
+
+		Valutazione delle prestazioni crittografiche:
+
+			-di base non richiedono molta RAM ma dipendono molto dalla CPU(arch. e instruction set) e dalla dalla cache, le presatzioni non sono un problema sui client ma sui server! => esistono acceleratori crittografici (HSM hardware security module) , acceleratori specifici (SSL, IPsec)
+			
+
+
+	24/10/2019
+
+		NSA consiglia la suite B:
+
+			-per informazioni SBU
+					simmetrica: AES-128 e EAS-256
+					hash: sha-256 e sha-284
+					firma digitale: ecdsa
+
+			-per info fino a livello secret:
+					aes128 + sha256+ ec256
+			-per top secret
+					aes256 + sha284 + ec284
+
+					QUESTO VALE FINO ALLE 2017
+
+		Key escrow -> recuperare la chiave anche senza consenso del utilizzatore (tramite back door) 
+
+		Key recovery -> fondamentaale per la cifratyura simmetrica
+
+		lawfull interception -> tecniche dei governi pre spiare la gente
+
+
+		TECNICHE E SISTEMI DI AUTENTICAZIONE(authN)
+
+			Alla base di tutto sta l'auth: 
+				
+				-per definizione: "il processo di verificare una claim (qualcosa che io asserisco/pretendo) che un entità del sistema o una risorsa del sistema ha un ccerto valore per un certo attributo" => (gli esseri umani non sono specificati dato che sono da autenticarsi soprattutto le componenti sw e hw)
+				
+				-"la verifica del identità di utente/processo/dispositivo" -> si parla del authN di un ATTORE (entità attiva) che potrebbe essere un qualsiasi tip di entità tra umano, sw e hw
+
+			Fattori di authN:
+
+				conoscenza -> knowledge (password, pin ecc ..)
+				
+				possesso -> ownership (smart card, carta magnetica, smartphnone, token ...), l'oggetto in possesso viene chiamato autenticatore
+				
+				essenza -> inherence (caratteristiche biologiche)
+
+			Rischi dei fattori:
+
+				conoscenza -> come viene memorizzata? come viene trasmessa per dimostrare l'identità?
+				
+				possesso -> l'autenticatore stesso, furto, clonazione, uso non autorizzato, malware 0> autenticatore infettato
+				
+				essenza -> contraffazione(è molot facile clonare l'impronta digitale per lettori scarsi tipo quelli dei cellulari) e privacy(rischio per il reale possessore del essenza che potrebbe essere incrimanto di cose che non ha fatto), non puo essere rimpiazzato quando compromesso, ==> i fattori di essenza devono essere usati solo per sbloccare qualcosa in locale NO SERVER,
+				troppo rischioso da mandare in rete
+
+
+			Modello di autenticazione digitale:
+
+				applicant -> lui che si vorrebbe autenticare
+				CSP -> (autenticatore) entita che verifica l'identità e nel caso esegue l'enrollement (credential service provider) emette o registra le credenziali utente
+
+				verifier -> esegue un protocollo di authN
+
+				subscriber -> utente valido del sistema
+
+				relyng party ->uno che fa affidamento sul sistema di auhtn per conoscere l'identita del utente riceve authN assertion
+
+				claimant -> protocollo di authN con cui si palra con un -> verifier una vlta verificato il claimanta il verifier fonrisce al relyng party le info (authN assertion) per dire che quel claimant è ok e puo partecipare alla sessione
+
+28/10/2019
+
+				Autenticazione degli utenti
+
+					Password ripetibili:
+						server -> mantiene tabella con Username-password(Puid) oppure username - hash password
+
+							vantaggi:
+								semplice per l'utente a codnizione che  ne abbia una sola
+							svantaggi:
+								conservazione delle password lato utente
+								password indovinabile 
+								attacchi dit iopo dizionario
+							Problemi:
+								password sniffing
+								password guessing -> molto pericoloso se fatto offline (di solito online si blocca il sistema dopo tot tentaivi)
+								password duplication -> non usare mai la stessa pwd per n servizi diversi 
+								cryptography ageing
+								phishing, mitm, password capture
+
+						suggerimemnti per sceglliere una pwd:
+
+							caratteri miscelate
+							lunghe almeno 8 (no limite massimo ma solo minimo)
+							parole non presenti nel dizionario 
+							cambiate di frequente (1 o 2 volte l'anno)
+							non usarle -> sitemi biometrici
+
+						memorizzazione delle pwd:
+
+							lato server
+								mai in chiaro 
+								pwd cifrata ?il server deve conoscere la chiave in chiaro
+								=> memorizzare un digest della pwd(tipo hash)
+									questo si presta a un attacco dizionario (provo tutti gli hash) -> attacco velocizzabile con rainbow table
+									si deve usare del 'sale' per introdurre una variazione imprevedibile
+
+							lato client
+								dovrebbe essere solo nella testa del utente oppure file cifrato (password wallet)
+
+				-Attacco dizionario:
+
+					Ipotesi, algoritmo di hash noto, hash delle pwd noti/leggibili
+
+					pre calcolo : for each word in dict do store(sb,word,hash(word))
+
+					attacco : sia HP l'hash di una pwd
+								w = lookup(DB,HP)
+
+								if success then write (pwd = w)
+								else write (pwd not in my dictionary)
+						si possono trovare db enormi nel deepweb
+
+				-Rainbow table:
+					tecnica di trade off tra spazio e velocita (in quello normale massimo spazio velocita minima) 
+						tabella perpwd di 12 cifre	
+						es: tabella esaustiva = 10^12 righe 
+						rainbow = 10^9 righe ognuna rappresenta 1000 pwd
+							usa una fuznione di riduzione
+
+						pre calcolo:
+
+							(da riscrivire perche non si è capita)
+
+				per evitare sti attacchi non memorizzare MAI l'hash in chiaro, ma si memorizza l'hash di una pwd che è stato alterato da un sale(un numero random e lungo , uno per ogni utente, meglio se con caratteri poco usati),
+				si calcola HP = hash(pwd || salt)
+				memorizza la tripla {UID, SALT_uid, HP_uid} in questo modo si evita di avere HP uguale per utenti diversi ma con stessa pwd -> ciò rende impossibile attacchi dizionario dato che dovrebbe essere calcolato un dizionare per ogni sale quindi -> numero di hash delle pwd x 2^nbit_sale
+
+				-> my_sql usa un doppio hash senza sale -> modificare la funzione di memorizzazione pwd
+
+	AUTENTICAZIONE FORTE (strong authN)
+
+		si sta parlando di peer authN (autenticazione al apertuta di una sessione)
+
+		-Definizione ecb: (banca centrale)
+			strong customer authN è una procedura basata du due o piu fattori basati si knowledge.owenership,inherence
+
+			gli elementi selezionati devono essere mutalmente indipendenti ( no sbloccare pwd tramite impronta digitale ).
+
+			almeno un elemento deve essere non replicabile
+
+			non deve essere soggetto a furto durante la trasmissione in rete
+
+		-Definizione PCI-DSS (standard per e-commerce)
+
+			v3.2 richiede multifactor auth (MFA) per accessi al CDE (cardholder data environment) per accessi da rete, dagli admin, eccezione: accesso diretto da console(sivìcurezza fisica)
+
+			e per accesso remoto
+
+				da rete untrusted, da utenti, da terze pari
+
+			Dal 01/2018 è obbligatorio
+
+
+		CHALLENGE-RESPONSE AUTHENTICATION CRA - protocollo a sfida
+
+			una sfida viene inviata al claimant nel momento in cui esso si voglia autenticare , il verifier confronta la risposta con ka soluzione calcolata tramite un sergreto correlato ala claimnant
+
+			problemi:
+
+				la sfida deve essere non-ripetibile per evitare attacchi di tipo replay
+				-> si solito la sfida è un random nonce 
+
+				la funzione f deve essere non invertibile, altrimenti un ascoltatore sul canale puo calcolare la chiave usata  kc = f^-1(response,challenge)
+
+
+
+			SISTEMI A SFIDA SIMMETRICI- SYMMETRIC CRA
+
+				f == g Kid memorizzata su server e client, schema buono per usare pwd ripetibili senza inviarle in rete
+
+				Kc deve essere nota in chiaro al verifier 
+
+				SCRAM (salted cra mechanism) risolve sto problema usando hash di pwd sul verifier
+
+				attacco possibile : marzullo attack
+
+			SISTEMI A SFIDA ASIMMETRICI
+
+				sono piu pesanti
+
+				il claimant invia il proprio certificato a chiave pubblica, il verifiaer invia un challenge criptato con un numero random X e la chiae pubblica del claimant, il claimant decifra la sfida con la sua chiave  pri e come rispsta invia X, a questo punto il sevrer deve fare una serie di controlli tipo per vedere se quel certificato è valido 
+
+				-non memorizza segreti sul verifier
+				-implementato in ipsec, ssh , tls  
+
+
+			PASSWORD USA E GETTA - OTP
+
+				il server usa una funzione p la quale mettendo l'id del opt e il segreto del utente torna la pwd otp del utente
+
+				password valida solo una volta per il protoccolo di authN
+
+				evita replay e sniffing ma soggetto a MITM => serve authN del verifier senno phishing 
+
+				è difficile fornire le pwd al subscriber così come inserirle dato che sono costituite da caratteri random
+
+				-Come fornire otp agli utenti?
+
+					tramite hw su postazioni stupide/insicure
+					tramite sw su postazioni sicure smartphone/tablet/laptop
+
+
+				-Il sistema S/KEY
+
+					il verifier chiede la password al contrario mentre il subsriber se le calcola a catena da 0 a n-1 in modo che ogni password dipenda dalla precendente
+
+					è un esempio di off-line / pre computed otp
+
+
+				Time based otp
+
+				la pwd dipende dal tempo e dal segreto dell'utente
+
+				p(ID,t) = h(t,S_id)
+
+				bisogna sempre avere una tolleranza quando si usa il tempo per sincronizzarsi tra client e server => si usa un time slot ed una finestra di autenticazione, una sola authN per timw window elimina il problema del attacco replay (tipicamente 30'', 60'' non buono per alcuni servizi tipo la borsa). Possono esserci attacchi contro il claimant e verifier (esistono generatori di femtocelle che generano l'ora sbagliata al cellulare tipicmente nel futuro cosi l0attacante sa la pwd del futuro) oppure si puo attaccare il server mandando annunci NTP (network time protocol) impostando l'ora sbagliata causando un DoS e volendo un attacco replay se si mette l'ora sbagliata sul server => occhio a NTP sul server
+
+				database critico sul verifier -> se si riesce a rubare il db si possono scoprire tutte le altre pwd
+
+				duress code -> utile sotto minaccia
+
+				RSA securID - architettura -> si deve montare sul server applicativoun client (ace client) che comunichi col verificatore (ace server) per verificare che ogni triade sia corretta
+
+				Event-based otp -> usato in borsa quando servono tante authN per minuto
+
+					usa l'hash di un segreto ed un contatore intero e monotonico => richiede una calcolo localo presso il claimant (es. pulsante), possibile fare auhtn a raffica, possibile pre calcolare l'otp, il verifier deve preveder la possibilita di essere desincronizzato col subscrbr ( pressione non voluta del generatore di pwd)
+
+				Out-of-Band otp
+
+				trasmissione oob della otp (ad es via sms) => serve l'associazione del numero di cellulare con la pwd. All'atto della trasmissione della otp serve un canale sicuro per evitare il MITM, il canale oob è spesso sms quindi è attaccabile per problemi di VoIP, user ID
+
+				-> deprecato sms-oob a favore di un meccanismo push su canale tls verso il dispositivo registrato dell'utente
+
+
+		ZERO-KNOWLEDGE-PROOF ZKP
+
+			una parte prover dimostra all'altra verifier che una certa affermazione è vera senza fornire altre informazioni
+
+			zkpp (zero knowledge password proof):
+
+
+		TWO - MULTIFACTORs AUTHN
+
+			uso di piu di un fattore es. pin usato per proteggere l'autenticatore
+
+
+		Autenticazione di essere umani
+
+			per essere certi che è davvero un umano che si vuole autenticare
+				-tecniche captcha
+				-tecniche biometriche
+				
+
+
+
+
+
+
+
