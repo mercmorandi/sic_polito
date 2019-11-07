@@ -925,7 +925,375 @@ INTEGRITA DEI MESSAGGI e AUTENTICITA ( + IMPO DI RISERVATEZZA )
 
 
 
+	31/10/2019
+
+	KERBEROS
+
+		nasce dsal esigneza di utilizzare la crittografia asimmetrico per far fronte al avvento dei pc al posto dei mainframe
+
+			TTP = trusted third party
+			realm = dominio di kerberos
+			credenziale = user.instance@realm (.instance mai applicato nella pratica -> aveva il compito di definire il ruolo e le autorizzazione dello user, es, admin, normal_user, ...) -> serve a definire in ogni momento i privilegi del utente 
+
+			ticket = struttura dati con cui k gestisce le authN nei confronti del server, un ticket dura 21 ore (v4) o illimitata(v5), è crittografato con una chiave simmetrica DES del server da cui deve essere consumato,è legato al ip del clinet cosi se lo rubano devono anche fare ip spoofing, ogni ticket è legato a una sola credenziale
+
+		ORGANIZZAZIONE DI KERBEROS
+
+			AuthN server -> contiene le chiavi di tutti gli utenti scritte in chiaro (pericoloso!) e conosce la chiave simmetrica del tgs
+			Ticket granting server -> contiene le chiavi di tutti i server applicativi
+
+			Procedura:
+
+				lo user chiede al authn server di autetnicarsi il quale chiede al tgs il tgt(ticket granting ticket) che viene mandato cifrato con la chiave dello user. Lo user lo prende decifrandolo con la propria password e lo usa per dire al tgs tutti i servizi a cui vuole accedere per quello specifico server, osicche tgs dara un ticket per ogni servizio richiesto (cosi com'è il sistema è sensibile ad attacco replay se qualcuno riesce a sniffare il tgt o il ticket specifico del servizio).
+
+				Kerberos viene usato da microsoft per gestire le proprie reti, in linux si puo usare come sistema comune din authn tra due diverse postazioni
+
+			Ticket:
+
+				_> solo il server a cui e assoicato puo decifrarlo, 
+				contiene -> server-id, client-id, client-address, timestamp, life, chiave simmetrica valida tra user e server a cui è destinato
+
+			Autenticatore:
+
+				contiene -> id del client, ip del client, timestamo, cifrati con la chiave simmetrica tra il client e il sevr cui deve protegfere la comunicaioni da replay e op spoofing
 
 
+			Richiesta del tgt:
+
+				Tc,tgs -> ticket del client nei confrinti del tgs 
+				Kc, tgs -> la inventa l'auth server
+				parte gialla -> ticket cifrato con la chiave del tgs (nb dentro il ticket c'è la stessa chiave usata per cifrare il ticket cioè il K tgs), l'unico attacco possibile qua è il DoS 
+
+			Richiesta del ticket:
+
+				La roba in giallo è il tgt(ticket granting ticket)
+
+				il client manda l'id del server a cui vuiole authn, il tgt, un autenticatore con l'ora e cifrato con una chiave tra me e il tgs cosicche non è soggetto a replay e serve a garantire che quel ticket è mandato esattamente in quel instante
+
+				ora il TGS crea un ticket specifico per accedere al server richuesto 
+
+			Uso del Ticket verso il server applicativo:
+
+				come la prima parte di richiesta al tgs con l'autenticatore
+
+				il server si autentica nei confronti del client madando indietro il timestamp del autenticatore +1 cifrato con la chiave comune tra client e server appplicativo
+
+			NB tutti i ticket all interno contengono la chiave simmetrica usata per comunicare tra cliente e server
+
+		Kerberos è un ottima soluzione per sistemi IoT dato che non usa chiavi asimmetriche
+
+		Kerberos fornisce:
+
+			inter realm authentication
+			
+			forwardable ticket
+			
+			ticket estesi (dentro il ticket è stata riservata una parte dove ogni ticket server puo aggiungere info aggiuntivie)
+
+			login unico per tutti i servizi kerberizzati
 
 
+			è ottimo nel caso di connessioni intermittenti dato che i ticket durano tot è l'autenticazione non salta se salta la connessione
+
+
+		SSO (Single Sign-On)
+
+			fornire all utente un unica credenziale con cui autenticarsi su ogni sistema
+			SSO fittizio: 
+				Di default c'è dentro il browser
+
+			vero SSO :
+				tecniche di auhtn multiapplicazione -> posso uasre un unica credenziale per autenticarmi su piu sistemi
+
+				sso multidominio ( vedi accesso con le credenziali di Fb es. token SAML)
+
+		Interoperabilità dei sistemo di authN -> unico sistema per fare strong authN 
+			
+			specifiche OAUTH basato su otp 
+
+		HOTP
+
+			K -> chiave segrata condivisa tra autenticatore e verificatore
+			c -> contatore
+			h -> funzione di has crtittografica a scelta (default sha1)
+			sel -> selezione 4 byte da una stringa piu grossa in una maniera nota
+					-> 32 bit
+			HOTP(k,c) = sel(HMAC-h(K,C)) && 0x7FFFFFFF faccio l'hash con hamac del contatore con la chiave applico la funzione sel e metto i risultato in and con quella roba li
+
+			HOTP CODE viene generato prendendo il risultato di prima in modulo 10^N
+			dove n puo essere (6-8)
+
+		TOTP
+
+			come HOTP ms il contantore
+
+			c = (t-t0)/ts dove ts è il time slot entro cui verra generato un unico code , t è lo unixtime(now), t0 è la unix epoch, il ts di default è 30 secondi
+			n = 6
+			h = sha1(ma puo usare sha256 sha 512)
+
+		Google authenticator
+
+			supporta hotp e totp con:
+
+				k fornita in base 32
+				c fornito come uint_64
+
+				sel(x) usa i 4 bit meno significativi di x come offset e torna X[offset...offset+3]
+
+				ts = 30 secondi
+
+				N =6
+				se il codice generato ha meno di 6 cifre -> si fa padding a sinsitra con zero
+
+
+		FIDO
+
+			Fast indentity online
+				è uno standard industriale per fare authN biometrica e 2-factor authN.
+				deve sapere rispondere a firme asimmetriche e generare firme digitali è basato su dispositivi personali
+
+				si usa come autenticatore un applicativo che genera coppie di achiavi asimmetriche che devono essere approvate dal utente(trimite pin i impronta digitale) alchè la chiave pubblica viene mandata al servere al quale ci si vuole autenticare
+
+				NB usare chiavi diverse permette di proteggere la nostra identita per non essere tracciati(protezione privacy)
+
+				Il login avviene tramite challenge inviata dal server a cui si vuole accedere la risposta alla sfidsa viene mandata cifrandola con la propria chiave privata
+
+
+				Transazione sicura -> oltre alla risposta viene mandato un testo relativo alla transazione firmato digitalmente cosicche venisse modificata non puo essere accettata
+
+				no phishing perche la risposta puo essere firmata dicendo che sto rispondendo a quel server
+
+				si genera un keypair ad ogni ogni registrazione -> non esiste traccibailità/collegabilità tra servizi deiversi usati dallo stesso utente, account diversi assegnati allo stesso utente
+
+			TPM -> oggetto hw che gestisce chiavi pubbliche e chiavi private 
+
+
+4/11/2019
+
+SICUREZZA DELLE RETI IP
+
+	Autenticazione dei canali ppp (point to point protocol), protocollo per incapsulare pachertti di lvl 3
+
+		3 fasi sovlte in squenza:
+			LCP -> link control prootcol
+			authN -> opzionale(PAP, CHAP o EAP)
+			L3 encapsulation -> (IPCP, IP control protocol)
+
+	PAP -> primo sistema di auhtn per accessi dial-up ma anche wireless o virtuali
+			Password authn protocol
+
+	CHAP -> challenge handshake authn protocolo -> sfida simmetrica basata su password utente
+
+	EAP -> extensible authN protocol(per evitare di sviluppare n protocolli per ogni tipo di roba da proteggere) si aggancia a meccanismi esterni(sfide,otp,tls). Ora si usa solo EAP
+
+	PPP EXTENSIBLE AUTHN PROTOCOL - EAP
+
+	si deve implementare da solo il livello 2 (un proprio protocollo di incapsulamento) 
+
+
+	ARCHITETTURA
+
+	 eap sta in mezzo tra un qualche cnanale di trasporto (802.3, ppp, 802.11, 802.5) e i vari moduli che offrono il metodo di autenticazione richiesto dal tipo di canale di comunicazione
+
+	 il NAS si appoggia a un server di backend (authenitication server AAA) che effettua l'autenticazione usando un database con le info degli utenti, inoltre se l'utente supera i controlli gli viene assegnata delle configurazioni (e mette l'utente in una vlan per tenerlo separato dalla traffico in rete) 
+
+	 SERVER DI TIPO AAA (authn, autorizzazione, accounting)
+
+	 Protoclli di comunicazione tra nas e authN server-> RADIUS
+
+	 	radius è il piu diffuso e puo funzioinare da proxy
+
+	 	diameter -> evoluzione di radius, supporta roaming tra isp diversi, eleveta attenzione alla sicurezza
+
+	 	tacacs+ -> era meglio di radius ma non open source
+
+
+	 RADIUS - remote authn dial-in user service (1991)
+
+	 	schema tra nas e as:
+
+	 	timeout e ritrasmissione, flotta di server secondari (pericolo DoS)
+
+
+	 RADIUS PROXY
+
+	 		il server radius puo fungere da proxy verso altri server di authn (n NAS, m authN server), si possono definrie utenti sepeifichi che sinusano solo us riadius altri per altri server.
+
+	 		dato che radius puo essere usato con qualsiasi protocollo di authN (vedi pap, chap) nei suoi pacchetti potrebbero esserci (nb siamo tra il nas e l'auth server) lo username e la pwd -> serve confidenzialità e privacy (sniffing nas req)
+
+	 		fkase AS resp -> non c'è authN del server finora, si potrebbe usare un fake AS per bloccare o per permettere un ingresso non autorizzato
+
+	 		changing AS resp (cambiare le risp di autorizzazioni per fare le cose di prima)
+
+	 		replay of AS resp
+
+	 		pwd enumeration( from fake NAS ) -> le richieste del nas devono essere autenticate
+
+	 		DoS -> tante richieste da parte di un fake NAS -> server scalability
+
+	RADIUS: protezione dei dati
+
+		integrita e authn dei pacchetti tramite keyed-md5:
+			key = shared-secret
+			client senza key sono ingorati
+
+		password trasmessa "crittogrfata" con md5 (dopo averne fatto il padding a 128 bit con NULL)
+
+	RADIUS: Paccehtti
+
+		access-request
+
+		access-reject
+
+		access-challenge
+
+		access-accept
+
+
+	NAI (Network access indetifier) - nel caso di di username = username[@realm]
+
+	esempio chap + radius
+
+
+	DIAMETER
+
+	protezione obbligatoria con IPsec o TLS
+
+		configurazioni obbligatorie:
+
+			IPsec ESP  per integrita
+			TLS per muta authn
+
+	IEEE 802.1x 
+
+		port-based network access control:
+			per il livello 2 (MAC)
+			utile sugli switch di reti wired
+			indispensabile nel casi di reti wireless
+
+		framework per autenticazione e key-management
+
+			siccome puo essere usato per reti wireless il canale puo essrer sniffato molto easy => serve riservatezza della chiave percio puo derivasre chiavi di sessione da usare in authn e integrità e riservatezza
+
+		architettura:
+
+			eapow (eap over wireless) se incapsulato dentro 802.11
+			eapol (eap over lan) se incapsualto dentro ethernet
+			eapor (eap over radius) incampusao il pacchetto dentro radius 
+
+		vanatggi -> comunicazione diretta tra supplicant e AS , il NAS agisce come 'pass-throug-device' => nessun cabio di nas o nic per implementare nuovi meccanisimim di authN
+
+	EDUROAM -> es di omplentazione di 802.1x
+
+	LIVELLO OTTIMALE?
+
+		piu si sale nello stack piu le funzioni saranno specifiche
+
+	SICUREZZA DEL DHCP
+
+		è un protocollo non autenticato => facilissimo attivare shadow/fake server
+			-DoS
+			-MITM logico -> fornisco config con subnet da 2 bit + default gw uguale alla macchina che vuole essere mitm -> ogni pacchetto passa dal fake gw, facendo nat si intercettano anche le risposte
+
+		Protezione del dhcp
+			alcuni switch offrno dhcp-snooping = solo risposte da trsuted port
+			IPguard -> solo ip ottenuti da dhcp
+
+			-RFC-3118 
+				usa hmac-md5 per autenticare i messagfi
+				poco usato perche serve chiave simmetrica tra user e server dhcp(molto complicato)
+
+		Sicurezza a livello 3 - network
+
+			è il primo livello end-to-end -> protezione end-to-end per reti omogenee a livello logico, oppure tramite vpn per proteggere solo una parte del path
+
+			VPN - virtual private network
+				è una tecnica hw o sw per creare una rete privata utilizzando canali e apparati condivisi e NON fidati
+
+				Per realizzare una vpn si puo usare -> tunnetl ip sicuro, reti nascoste
+
+			VPN CON RETI NASCOSTE
+
+				molto pericolose
+
+			VPN mediante tunnel
+
+				i router incapsulano paccheti di rete all interno di altri pacchetti, protezione superabile da chi gestisce i router o da chi puo comunque leggere i paccehtti
+
+				problemi di performance dovuti al doppio payload => frammentazione
+
+			VPN mediante tunneil ip sicuro -> la soluzione migliore
+
+				prima di essere incapsulati i pacchetti vengono protetti con le regole decise dal utente tramite MAC per integrità e authN, cifratura per riservatezza, numerazione per evitare replay -> l'unico tipo di attacco è il DoS se gli algoritmi crittografici sono forti
+
+	IPSEC
+
+		architettura IETF per fare sicurezza a livello 3 sia in ipv4 che ipv6 -> implementazione standard di cio visto prima. ipsec si inventa due formati che apparanetemente sono due protocolli di trasporto che si chiamano AH e ESP
+
+		Pseudo Protocolli
+
+		AH -authn header: fornisce integrita, authn e no-replay	
+		ESP - encapsulating security payload: fornisce AH + riservatezza	
+		IKE -internet key exchange : per negoziare in rete chiavi simmetriche 
+
+	IPsec security association (SA)
+		connessione logica unidrezionale protetta tra due sistemi ipsec, ad ogni sa sono associabili caratteristiche di sicurezza diverse (monodirezionali) => occorrono 2 SA per avere protezione completa di un canale bidirezionale
+
+	DATABASE LOCALI ipsec
+
+		SPD - security policy database
+
+			contiene la security policy da applicare ai diversi tipi di comunicazione - da le info sul traffico da proteggere - puo essere configurato manually
+
+		SAD - SA database
+
+			contiene l'elenco delle sa attive in un certo istante di tempo	
+
+	IPSEC IN TRANSPORT MODE
+
+		usato per fare sicurezza end-to-end => usato dagli host non dal gw, si aggiunge un secondo header ip prima del payload tcp (se c'è qualcosa da progteggere nel header ip di partenza non puo essere protetto)
+
+	IPSEC IN TUNNEL MODE
+
+		si protegge anche l'header ip end-to-end fondamentale che i gw siano in grado di implementer ipsec
+
+
+	AH - AUTHENTICATION HEADER
+
+		nella prima versione c'era un errore (no-replay) poi aggiunta nella seconda versione che usa HMAC-MD5 
+
+		l'autenticazione è fornita dalla SA negoziata tra i due peer 
+
+		Normalizzazione per AH
+
+			vengono azzerati i campi variabli(in trasmissione) tipo il ttl o se presente il routing header -> se non viene normalizzato il pacchetta è come se fosse stato manipolato
+
+		HMAC-SHA1-96
+
+			slide 57
+
+	ESP - encapsulating security payload
+
+		prima versione solo riservatezza nella seconda versione incoorpora le funzioni di ah 
+
+
+		esp in transport mode
+
+			si cifra esattamente e solo il payload => non nasconde l'header (si puo sniffare che la cominucazione avviene tra due nodi noti)
+
+		esp in tunnel mode
+
+			si cifra tutto il pacchetto compreso l'header end to end
+
+			in questo modo per gli isp è impossibile fare QoS dato che non è possibile determinare il payload type del pacchetto cifrato
+
+	PROTEZIONE DA REPLAY IN IPSEC
+
+		ipsec non protegge da cancellazione e replay dato che è un azione indistinguibile, per evitare qusto si dovrebbe tenera traccia di ogni pacchetto ricevuto cosa impossibile a livello ip => si usa una finestra limitata che tiene traccia dei pacchetti solo in quella finestra se ad esempio arriva un pacchetto in ritardo fuori dalla finestra si deve decidere se accettarlo o meno, se si accetta però è fondamentale che ci siano controlli a livello piu alto dall'altra parte scartare un pacchetto pensando che potrebbe essere replay comporta un grande overhead nel caso non dovesse essere scartato
+
+	ipsec v3
+
+		ah è opzianle mentre esp è obbligatorio
+
+
+		TFC traffic flow confidentiality - viene fatto del padding per nascondere la vera dimensione del messagio per cui si potrebbe conoscere il tipo di implementazione usata -> si peggiorano le prestazioni -> supporto per pacchetti dummy (next header 59) quindi normanlemnte tutti i nodi collegati con ipsec trasmettono sempre per confondere le idee a delle potenziali spie
