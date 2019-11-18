@@ -1297,3 +1297,190 @@ SICUREZZA DELLE RETI IP
 
 
 		TFC traffic flow confidentiality - viene fatto del padding per nascondere la vera dimensione del messagio per cui si potrebbe conoscere il tipo di implementazione usata -> si peggiorano le prestazioni -> supporto per pacchetti dummy (next header 59) quindi normanlemnte tutti i nodi collegati con ipsec trasmettono sempre per confondere le idee a delle potenziali spie
+
+
+
+11/11/2019
+
+	John the ripper tool - password cracker
+
+		Attacco dizionario:
+			in /usr/share/john/password.lst -> di defualut include un dizionario banale(qualcke KB), uno decente costa qualche decina di dollari nel darkweb (qualche decina di MB)
+		Esercizi:
+					Stime temporali
+
+SYNTAX PER ESERCIZI
+
+		encyrpt notation	
+			E_AES_128_cbc()
+
+		decrypt
+			D_aes_128_cbc()
+
+		p = plain text
+		c = cipher text
+
+		NB nella funzione di ehash si mette tutto quello che debe esserer passato compreso il tipo di algoritmo usato
+		
+
+18/11/2019
+
+	configurazione ipsec:
+
+		-end to end security:
+			canale virtuale sicuro ipotesi che gli unici di cui cis i puo fidare sono solo i due host tutto il resto è insicuro => transport mode pacchetti sicurizzato sugli host => non si puo cifrare l'header -> vanno configurati tutti i terminali, di difficile implementazione nel caso di molti host. MIcrosoft ha risolto sto problema in parte dato che utilizza protocolli insicuri di default a livello applicativo, cosi ha sicurizzato lo stratlo sottostante con active directory il quale permette di configuare i nodi con ip sec facilmente. Un altro problema è che non si puo fare intrusion detection del traffico scambiato tra due nodi configurati in transport mode end to end sec.
+		-Basic VPN:
+			non viene sicurazzato il traffico sui nodi finale ma si assume che una porzione della rete è fidata, si mette un GATEWAY in un certo punto tra la rete fidata e la non fidata, e su questo GATEWAY si mette ipsec in tunnel mode. La banche usano questa soluzione. Fondamentale che la rete interna ritenuta fidata lo è veramente. Si crea un collo di bottiglia immenso dato che quel gateway dovra fare cifratura di n mila host tutti insieme => il gateway va equipaggiata bene. Cosi si puo fare ID nella rete interna 
+		-End to end security with basic VPN
+			transport mode sugli host + tunnel mode sul gateway , disponibilita di una doppia linea di difesa => si puo vedere come un autenticazione sul terminale e una cifratura sul gateway
+
+		Queste soluzione in caso di monbilita non vanno bene
+
+
+		-Secure gateway:
+			soluzione nel caso di terminali in mobilità, si crea un canale virtuale sicuro tunnel mode tra host e gateway => autenticazione + cifratura
+
+		-Secure remote access:
+			doppia protezione tunnel-mode verso il gateway (autenticazione per lingresso in rete) + tunnel transport mode verso un terminale (cifratura + volendo autenticazione) è fondamentale che i terminali abbiano la capacità crittografica e di batteria per eseguire le operazioni di cifratua
+
+		-IPsec key management:
+			è necessario configuare i nodi =>ipsec key management è una soluzione che permette di scegliere chiavi e distribuirle:
+				-distribuzioone OOB manuale/automatica
+
+			-ISAKMP - internet scurity association and key management protocol
+				definisce le procedure per negoziare stabilire escamnbiare le chiavi, non indica il metodo da usare per lo scambio
+			-IKE - internet key exchange
+				phase1 -> si setuppa una prima SA
+					main mode = 6 messaggi, protegge l'identita delle parti
+					aggressive mode = non protegge l'identità
+
+				phase2 -> tramite la prima SA si crea una seconda SA piu specifica (tipo comunizione sicura sulla porta 23, 56, udp...)
+					quick mode : 3 messaggi
+					new group mode: 2 messaggi permette di cambiare l'algortimo e la chiave di cifratura senza interrompere il traffico (dato che puo esserer pericoloso cifrare una grossa mole di dati con lo stesso algoritmo)
+
+				metodi di autenticazione:
+					-NON RIPUDIO DELLA NEGOZAZIONE IKE con la firma digitale
+					-Public key encryption
+						protezione dell identita nell aggressive mode
+
+					-Revised Public 
+
+					-Pre shared key
+						l'id della controparte puo essere solo l'ip quindi non va bene per psotazioni mobili
+
+		-VPN concentrator
+
+			apparecchiature special purpose che fungono come terminatori di tunnel ipsec, prestazioni elevate in relazione ai bassi costi
+
+		-requisiti di sitema per ipsec 
+			su router cpu potente, non va bene gestirlo in outsourcing
+			su firewall cpu potente
+			su vpn concetrator : bella soluzione dato che è indipendente dal resto degli elementi => massima indipendenza dalle altre misure di sicurezza
+
+		-Influenza di ipsec sulle prestazioni
+			diminuisce il TH di rete. 
+			NB non si puo fare compressione a livello piu basso di dove viene fatto ipsec dato che ci fa perdere tempo, rende il pacchetto piu grosso, e fornisce un dizionario di similutidini => mai comprire il pacchette ipsec!! volendo si puo usare ipComp
+
+		-Applicabilita di IPsec
+			solo pacchetti unicast, no broadcast, no multicast, no anycast (non sono proteggibili da ipsec). Tra parti che hanno attivato una SA, tramite chiavi condivise o certificati x.509 => gruppi 'chiusi'
+
+	SICUREZZA DI IP
+
+		inidirizzi non autenticati 
+		pacchetti non protetti
+
+		sono facilmente attaccabili specialmente i protocolli di servizio (icmp, ...)
+
+		-ICMP
+			destination unreacheable: Dos
+			source quence = quando i router hanno i buffer pieni chiedono di dimezzare la velocita di trasmissione della source => Dos
+			redirect: pacchetto di controllo usato per segnalare nuova destinazione -> ma dato che il pacchetto redirect non è autenticato si puo fare un MITM logico
+			time exceeded for a datagram = se si supera 64 hop allora c'è un loop sto messaggio comunica al mittente sto fatto => Dos
+
+		-SMURFING ATTACCK
+			tipo di ping bombing : l'attaccante fa finta di essere un nodo A (vittima) e lancia un echo request con destinazione X:Y:255:255 in questo modo ricevera 65000 risposte di tipo echo reply ma non l'attaccante ma la vittima con ip di A
+
+			Contromisure:
+				per attacchi dall esterno rifiutare il broadcast IP
+
+				per attacchi interni: identificare l'attaccante tramite network management
+
+		-Fraggle Attack (tcp small services)
+				sfrutta servizi diagnostici di livelli diversi da ip (tipo tcp udp), udp/tcp echo request misura le prestazioni bidirezionali, volendo si puo mandare un pacchetto solo di andato collegandosi a una porta chiamata di discard, oppure misurare la durata della risposta sulla porta (-chiedere nome-)
+
+		-ARP poisoning
+			usato per scoprire l'indirizzo di l2 di un nodo di cui è noto solo quello di l3
+
+		-TCP SYN flooding
+			sfrutta il three way handshake di tcp, l'attaccante mando solo il syn senza mai rispondere con l'ultimo ack, in modo da satutare la tabella di rete della vittima finche non vanno in timeout di solito a 75 secondi nel caso di righe half open (solo con il syn) (fondametnale usare ip spoofing per non farsi sgamare e mandare richieste multiple). Cio comporta che è un attacco a singhiozzo
+
+			Difesa da SYN flooding:
+				-abbassare il timeout: rischio di eliminare client validi ma lenti
+				-aumentare le dimensioni della tabella: aggirabile con l'invio di piu richieste 
+				-usare un router con 'syn interceptor': sostituisce il server nella prima fase =	> quando arrivano i syn è lui che risponde con syn/ack => quindi se mai 
+					arrivera l'ack sara lui a comunicarlo al vero server
+				-usare router come syn monitor: uccide i pacchetti pendenti(RST)
+
+			SYN cookie
+				unico modo per eliminare il problema del syn flooding alla radice.
+				ogni volta che c'è un protocollo che richiede che il server mantenga lo stato c'è margine di attacco. Usa il sequence number calcolato in maniera crittografica usando dati del client => quando si riceve l'ultimo pacchetto di ack il server tramite il sequence number puo verificare che è davvero il client a richiedere la coneessione => quindi NO tabella delle connessioni sul server, è il client che si deve ricordare
+				Molto spesso non è attivo di default il SYN COOKIE
+
+	Sicurezza del dns:
+
+		terminare i nomi col punto (.) es: www.polito.it. 
+		il punto indica il root NS, omettere il punto comporta essere attaccabili a livello di dhcp su puo autoconfiguare il suffisso se non viene messo il punto alla fine del indirizzo => shadow server
+
+		Dns shadow server: se si è in grado di intercettare la domanda che un client fa a un name server, e tramite ip spoofing rispondo al client come falso name server, reindirzzo i client dove voglio (volendo per 15 giorni = durata della cache del nameserver del client)
+
+		DNS cache poisoning
+			attirare la vittima a fare una query al proprio NS, fornendo piu risposte a una dns query anche a query effettuate sovraschivendo la cache della vittima
+
+		DNS flash crowd
+			in generale flash crowd è analogo del flash mob ma per creare un dos, tutti quanti insieme fanno una domanda al dns di un certo sito
+
+
+		Traduzione nomi-indirizzi:
+			negli os c'è un modulo chiamato name switch che guarda in etc/host per collegarsi a certi indirizzi senza fare dns queries. ALtrimenti viene usato il resolver il quale fa partire il processo di traduzione  
+
+		DNS sec 
+			kaninski nel 2008 scopre un nuovo attacco che rende il cache poisoning (di tipo 2) piu facile da fare piu difficile da evitare (dx.doi.org)
+
+			firma digitale dei record dns (il server che genera la risposta la firma, cio elimina il problema del shadow server) , ma chi è authoritative per un certo dominio(chi ha il diritto di fornire la risposta?) serve la lista dei server autorizzati a fornire uqella risposta inoltre serve una pki per la distribuzione dei certificati => dns sec non usa pki, le chiavi pubbliche sono scritte direttamente nel dns quindi ogni volta che fa una richiesta dn il server deve fornire anche la propria chiave pubblica. un attacco possibile di dos è chiedere n indirizzi che non esistono per generare n certificati inutii 
+
+			-- l'indirizzo 8888 di google è multicast -> il router seleziona il server che è piu vicino al client quindi funge da dns (nb che che cosi non vengono cifrate le query) dns over https --
+
+			crittografia sui server dns 
+
+		Sicurezza del routing
+
+			AS cinesi gli as parlano tra di loro con bgp (border gatewy protocolo non autenticato) -> i cinesi hanno iniziato a mandare annunci bgp falsi dicendo che il modo piu veloce per mandare richieste verso gli us era passare verso pechino 
+
+			Filtri per protezione da ip spoofing, configurare i nodi con due regoli fondamentali per limitare i danni dello spoofing sia per i paccheti in entrata che in uscita
+
+	LO STANDARD X.509, LE PKI E I DOCUMENTI ELETTRONICI
+
+		Autorità di certificazione
+
+			se un utente vuole avere un qualche tipo di certificato necessita di un apparecchio che possa cifrare, genera una chiave privata e una pubblica, dopo mnada la pubblica a una ca con gli id a cui vuole associare la key, poi la registration authority fa le verifiche del caso e se va tutto ok comunica alla ca se puo emettere il certificato
+
+			x.509 v 3 è lo standard piu usato per eseguire questo processo di generazione e validazione di un certificato, ci sono due tipi di estensione di certificato
+				pubbliche:
+				private: mi autodefinisco io da solo, saranno interpratibili solo da una certa comunita di utenti
+
+			estensioni:
+				
+				critiche: se c'è una certificato marchiato con estensione critica che non conosciamo allora la richiesta va buttata via subito (non sono piu valide le garanzie legali)
+
+				non critiche: in questo caso non è cosi importtante per garantire la transazioni quindi sta al utente se accettare o meno la transazione
+
+				il differente trattamento è interamente a carico di chi effettua la verifica: RELIYNG PARTY
+
+				Estensioni pubbbliche:
+					key and policy information -> 
+						key usage: identifica lo spazio applicativo per cui questa chiave puo essere utilizzata. Le applicazioni definibili sono non ripudio, cifratura di chiavi, decifratura di dati, firma digitale, key agreement,
+						firmare certificati o crl (flag per CA)
+					certificate subject and certificate issuer attributes ->
+						subject alternative name (SAN) permette di usare id diversi a secondo del servizio 
+
+
