@@ -1483,4 +1483,78 @@ SYNTAX PER ESERCIZI
 					certificate subject and certificate issuer attributes ->
 						subject alternative name (SAN) permette di usare id diversi a secondo del servizio 
 
+	25/11/2019
 
+	Firme Digitali:
+		a volte sullo stesso documento sono necesarie piu firme
+			- primo formato signed data(pkcs7) -> la firma avvolge i dati(envelopping signature)
+			- sarebbe meglio avere enveloped signatoure in cui è la firma ad essere avvolta dal documento (es pdf) però se non hai un pdf non puoi firmarlo
+			-detached signature -> documento separato dalla firma serve un ptr per associare la firma al documento, però se il doc viene spostato il ptr non si aggiorna => problema!
+
+		Usando le tre tecniche insieme si posso implemntare tecniche di firma multipla
+
+			-In parallelo -> vengono fatte n firme in qualsiasi ordine sul documento (c'è un certo workflow unordered) qui ognuno firma solo il documento
+			-Sequenziali/gerarchiche -> quando il workflow deve avere un ordine specifico, allora il cosa si firma cambia (qui ognuno firma il documento con le precedenti firme apposte) 
+
+
+		Qualified Electronic Signature (QES)
+
+			non so che minchia sia
+
+
+		Standard ETSI per firma digitale
+
+			standard che dice in che modo va usato pkcs per implementate un firma elettronica digitale avanzata
+
+
+SICUREZZA DELLE APPLICAZIONI DI RETE
+
+	Sicurezza di canale:
+		protezione solo durante il transito nel canale -> la sicurezza è associata alla sicurezza del canale e bom, si puo fare sia singola che mutua authN e negoziare tutte le proprietà di sicurezza tranne il NON RIPUDIO. Tra le soluzione piu usate perche non necessita di modifiche applicative.
+
+	Sicurezza di messaggio:
+		la sicurezza è intrinsica del messaggio -> vale sia prima che dopo la trasmissione -> richiede modifche applicative, non si puo mutua authN ma si garantire non ripudio
+
+	Sicurezza interna alle applicazioni:
+		ogni app(client/server) condivide le api di accesso allo stack di rete (socket), interoperabilita non garantita
+
+	Sicurezza esterna alle applicazioni:
+		si inserisce un nuovo livello di canale logico sicuro sicuro
+
+		SSL/TLS : il piu diffuso al mondo
+		SSH: momento di gloria quando gli USA non potevano esportare authN forte
+		PCT: proposto e implementato solo da MS, ma faceva cagare
+
+
+		SSL(secure socket layer):
+			protocollo di trasporto sicuro a livello di sessione!
+			E' un protocollo a negozazione -> il livello di sicurezza va negoziato tra C e S. Proposto da NETSCAPE 
+			garantisce:
+			- authN (server, server+client)
+			- riservatezza dei messaggi (negoziabile)
+			- authN e integrita dei messaggi (non negoziabile)
+			- protezione da replay e da filtering (non negoziabile)
+
+			Dato che è un canale tcp arricchito con la sicurezza è facilmente applicabile ad applicazioni basate su tcp tipo http smtp nntp ftp.....
+
+			Authn e integrita 
+				il server durante l'apertura dei canale fa dei calcoli per rispondere a una sfida mandatagli dal browser, l'autenticazione del client è opzionale -> Peer Authentication
+
+			Per l'authn e l'integrita dei dati viene usato un keyed digest(sha-1) e un MID per evitare replay
+
+			ssl essendo su tcp da una socurezza maggiore rispetto ad ip sec dato che garantisce che l'ordine dei dati è corretto e non ci sono duplicati (tutte le proprietà garantite da tcp)
+
+			Riservatezza 
+				Il client genera una key di sessione usata per la cifratura simmetrica e poi viene comunicata al server o concordata tramite crittografia a k pub
+
+
+			NB il collegamento potrebbe fallire se il client non sa usare algoritmi di sicurezza richiesti dal server
+			1) richiesta https
+			2) il cliente comunicaz che algortimi di sicurezza conosce 
+			3) il server invia il certificato che deve contenere il nome del url come (subject name) -> un aziende con n applicazioni web deve avere n certificati
+			3bis) server challenge response
+			4) opzionalmente il cliente puo inviare certificato
+			4bis) client challenge response
+			5)CANALE SICURO SSL
+
+			In questo modo la sicurezza è garantita a livello di rete NON applicativo
