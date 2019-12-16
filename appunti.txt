@@ -1558,3 +1558,233 @@ SICUREZZA DELLE APPLICAZIONI DI RETE
 			5)CANALE SICURO SSL
 
 			In questo modo la sicurezza è garantita a livello di rete NON applicativo
+
+
+2/12/2019
+
+	DTLS - Datagram transport layer security 
+		tls per udp
+
+	Heartbleed
+		attacco contro tls, si basa su un estensione che è la cosidetta hearbeat extension(quando c'è una trasmssione se anche aulcuno non deve trasmettere niente comunque qualcosa viene trasmesso (vedi handshake) una volta stabilito un canale tls il client e server ogni tot si manderann dei messaggi di controllo (tipo sei ancora vivo o no)) CVE (common vulenerabilities and exposure, in sto db sono indicizzate tutte le vulenerabilità scoperte), questo attacco fa in modo di farsi rispondere dal server con informazioni contenute nella ram del server (info sensibili) sfruttando il fatto che nella request del client si chiedono il numero di lettere (ricordati fumetto bird,potato, hat) => buffer over-read. Se non si usa HSM il server è a rischio
+	Attacco downgrade del server 
+		-> si forza il server ad aprire un canale con vecchia versione di tls piena di bachi => attaccabile
+		-Estensione SCSV, per prevenire attacchi di downgrade, dovrebbe esserer inviata dal client quando si apre una connessione downgraded
+
+	Sicurezza di HTTP
+		1.0 - controlli address-based , fa cacare per l'ip spoofing
+			- basic authentication, l'accesso a una singola pagina richiede pwd e username, inviata dal client codificata in base64 (basta fare la decodifica e ricavo username e pwd)
+			=> ALTAMENTE INSICURI perche si era ipotizzato che http venisse ustao sopra canali tls sicuri
+		1.1 - introduce digest authentication
+
+
+		HTTP Basic AuthN - slide 66
+		HTTP digest authentication
+			sfida asimmetrica che manda un keyed digest
+
+	HTTP E TLS
+
+		TLS then HTTP oppure HTTP then TLS: non sono equivalenti e hanno impatto su firewall e IDS
+
+	USERNAME E PASSWORD IN UN FORM
+		la parte da proteggere è il trasporto dei dati => la action del form deve essere protetta da https ma anche la pagine web che contiene il form!
+
+	HTTP strict transport security (HSTS)
+
+	SIstemi di pagamenti elettronico
+
+
+FIREWALL e IDS/IPS
+
+	Firewall = muro tagliafuoco/antincendio -> nb il firewall è quando non passa nulla (IMPOSSIBILE!) quindi va ispezionato cmq quello che si fa passare! esempio tazzina di zucchero attraverso il muro
+
+	Ingress firewall = proteggo ciò in ingresso, seleziona i servizi che offro al esterno => collegamenti incoming
+	
+	Egress firewall =traffico in uscita dalla rete trusted (colleggamenti outgoing) => si usano per controllare cosa fanno le persone
+
+	Distinzione facile da fare per servizi orientati al canale. NB il firewall NON si compra!! il firewall è un sistema cioè un insieme di componenti quindi si progetta! (al massimo si comprano i suoi componenti)
+
+	L'indice di sicurezza e inversamente proporzionale al indice di funzionalità!
+
+	1. il fw deve essere l'unico punto di contatto tra rete interna e esterna => tutto il trafico di rete deve uscire/entrare da un solo punto
+
+	2. solo il traffico 'autorizzato' puo attraversare il fw!
+
+	3. il fw deve essere un sistema altamente sicuro esso stesso
+
+	Politiche di autorizzazione
+
+	1. tutto cio che non è espressamente permesso è vietato! -> whitelisting
+		maggior sicurezza piu difficile da gestire
+	2. tutto cio che non è espressamente vietato è permesso! -> blacklisting
+		minor sicurezza piu facile da gestire
+
+	FW Elementi di Base
+
+		- screening router (choke), da filtraggio
+		- bastion host, nodi/server super sicuri con AUDITING del traffico
+		- application gateway (proxy) per fare controlli a livello applicativo 
+		- dual homed gateway, sistema con due connessioni di rete e routing disabled=> due schede di rete molto potenti
+
+	A seconda del livello di rete a cui si fa sicurezza c'è un fw diverso
+
+		- packet filter: livello IP, controlla gli headers
+		- circuit gateway: esaminano gli stream tcp/udp a livello 4 senza entrare nel merito del traffico
+		- application gateway, ispezionano i dati applicativi (si guarda proprio il comando alivello 	applicativo GET DELETE PUT)
+
+	Architettura Screening Router
+
+		Fa controlli di molto basso livello
+
+	5/12/2019
+
+		Packet filter
+			ananalizza le info interne a un pacchetto
+
+		Appllication level gateway: serie di proxy per ogni protocollo applicativo che si vuole lasciare passare, che esaminano i contenuto dei pacchetti al livello 5(app), è la solzione che offre maggiore sicurezza (disinzione tra formward proxy (egress) e reverse proxy(ingress)).Si posssno scrivere regole di filtraggio molto piu granulari rispetto a un packet filter. Purtroppo rrompe completamente il modello c/s 
+
+		Circuit level gw (protegge da livello 3 e 4)
+			crea un circuito tra c e s a livello trasporto 
+			server piu protetti
+				protegge da tutti gli attacchi che riguardano l'handshake tcp e la frammentazione di pacchetti ip
+			puo autenticare i client (richiede modifiche applicative) SOCKS = egress firewall
+
+		HTTP forward proxy
+
+		Http reverse proxy -> fa da front end rispetto a chi vuole entrare passando poi le richieste al vero server
+
+		16/12/2019
+
+		IDS - Intrusion detection system
+
+			indetificare attori che usano le rete senza le dovute autorizzazone oppure eccedono le autotrizzazioni a loro assegnate.
+
+			Hp base : il pattern di comportamento del attaccante si differenzia da quello di tutti glia ltri utenti, altrimenti si ha difficolta a capirlo
+
+			IDS passivi
+				è sempre in ritardo, va a notare le tracce lasciate da un attacco, (Es: file di sistema alterati) (vedi TRIPWIRE), oppure not PACCHETTI gi transistai associabili ad attacchi noti ( attack signature)
+
+			IDS attivi
+				learning: si fanno delle statisctiche 
+				monitoring: si analizzano le statisctiche
+				reaction: confronto con paramentri statistisci il cui sui supermanto di una sogloia fda scatare l'allarme.
+				NB fa decisa una soglia di tolleranza opportuna (una troppo bassa beccherà tutti gli attacchi ma anche i non) => trovare la soglia giusta è la parte piu complicata (I FALSI ALLARMI SONO INEVITABILI è pieno di falsi positivi) 
+
+			Caratteristiche topologiche
+
+				HIDS(host based ids)
+					analisi dei log (del so delle applicazioni)
+					attivazione di strumenti di monitoraggio interni del so
+
+				NIDS(network based ids)
+
+				SIV / LFM : Sistemy inegrity verifier, controlla di file/filesystem 
+				Log file monitor: controlla i log
+
+
+				Componenti di un NIDS
+
+					sensor: controlla il traffico e i log individuando pattern sospetti
+					director: coordina i sensor a fa delle deduzioni in base ai dati rilevati dal sensor => comunicano in rete (hanno bisogno di una rete cablata)
+					ids message system
+
+			IPS - Intrusion prevention system
+				per velocizzare la risposta alle intrusione( esempio della metro e devOPs alle sichellese)
+
+		NEXT GENERATION FIREWALL (NGFW)
+
+			cerca di identificare le applicazioone decifrando e recifrando il traffico e indentifica gli utenti che stanno mandando il traffico , quindi verifcia se c'è una correlazioni tra i paccheti e l'applicazione o l'utente che li ha mandati, Identifica gli user con 802.1x,kerberos, authN e le app qualuqnue sia la porta
+
+		UTM - Unified threat managemetn
+			una magia che fa gia tutto, per i meno pratici, serve solo capire cosa ci hai messo dentro (firewall vpn ids ecc..)
+
+		Honey POT / Honey net
+
+			singolo server a bassa sicurezza per attirare i malintenzionati
+
+	SICUREZZA DELLA POSTA ELETTRONICA
+
+		MHS (message handling system)
+
+			E' lunico sustema di larga scala che non è end to end, in mezzo ci sono nmila server:
+				MUA - MESSAGE USER AGENT
+				MSA - MESSAGE SUBMISSION AGENT- preleva il messaggio o linietta nella rete
+				MTA - messagge transfer agent- 
+				MTA CHAIN- ci sono n mta salti, alla fine l'ultimo mta metta nel message store del utente il messaggio - cè una catena per gestire l'eterogeneita tra reti 
+				MS - messagge store
+
+		email in client server
+
+			mua -> msa -> msa -> .... (SMTP) push protocol
+			MS -> MUA (POP, IMAP) pull protocol
+
+		webmail( il piu usato)
+
+			comodo e INSICURO
+
+			web browser -> HTML/HTTP -> webserver: http engine + virtual MUA
+			La posta ce l'ha il fornitore del servizio essendo nel web server di terzi!!
+			SMTP 
+				mta(25/tcp)
+				msa(587/tcp)
+			POP
+				110/tcp
+			IMAP
+				143/tcp
+
+			MIME 
+				estensione multimediale (rfc-822)
+				solo caratteri US-ASCII a 7 bit, righe terminate da <CR><LF>, messaggi con header e body
+
+				termine riga: linux /n , mac <CR>, windows <CR><LF> (ambiguita tra OS)
+
+				HEADER RFC 822
+				 FROM != SENDER, from è logico (lo decidi tu), sender è operativo (quello reale)
+				 RECEIVED -> fa vedere i nodi del sistema di posta elettrnonica che sono stati attraersati, tipo trace route
+
+		Fare sicurezza su sto sistema è molto complicato
+
+		Mail Spamming (ube , unsolicited bulk email) (uce, usolicited commercial email)
+
+		1 messaggio su due di posta è di spam (55% circa)
+		
+		Strategie di spammer:
+			nascondono il vero mittente (cambiando solo il campo from usando un mittende esistente a sua insaputa)
+			spediscono spam tramite MTA speciali
+				zombie o botnet
+			content obfuscation	
+				errori deliberati
+				immagine invece che testo
+				open mail relay
+
+		OPEN MAIL RELAY
+			è un sistema che accetta posta oltre che per i suoi utenti anche per terzi
+
+
+		ESMTP - Extended SMTP
+
+			invece che helo si dice ehlo
+
+			smtp - auth: comando auth, serve ad autenticre un client prima di ricevere i messaggi, utile contro lo spamming 
+
+
+		Protezione di smtp con tls -> start tls = opzione, prima si apre il canale smtp poi si converte in tls
+
+		PGP - mondo underground (pretty good privacy)
+			Phil zimmerman ha creato un programma come freeware
+
+		Protocolli di accesso al MS
+
+			MUA -> post office => authn del server e del utente
+
+			POP -> fa solo authn del utente mediante pasword in chiaro, k-pop (kerberos)
+			IMAP -> sempre pwd in chiaro ma puo usare otp
+
+			POP3 - porta 110 -> tutto in chiaro
+			APOP - sostiuisce pwd e username in chiaro con una sfida
+			TLS per POP / IMAP - si crea prima pop imap poi si crea il canale tls
+			
+
+
+
+
